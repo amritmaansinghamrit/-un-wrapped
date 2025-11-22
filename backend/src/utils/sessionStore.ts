@@ -1,0 +1,142 @@
+import { Session } from '../types'
+import { customAlphabet } from 'nanoid'
+
+// Generate 6-character alphanumeric codes (like XK9P2M)
+const nanoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 6)
+
+// In-memory store for MVP (replace with Redis in production)
+const sessions = new Map<string, Session>()
+const codeToSessionId = new Map<string, string>()
+
+export const sessionStore = {
+  createSession(username: string, socketId?: string): Session {
+    const code = nanoid()
+    const sessionId = `session_${Date.now()}_${code}`
+    const now = new Date()
+    const expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1000) // 2 hours
+
+    const session: Session = {
+      id: sessionId,
+      code,
+      creator: {
+        username,
+        socketId,
+      },
+      joiner: null,
+      status: 'waiting',
+      createdAt: now,
+      expiresAt,
+      readyStatus: {},
+      activities: {
+        quickPicks: [],
+        songs: [],
+        voices: [],
+        photos: [],
+        creative: null,
+      },
+    }
+
+    sessions.set(sessionId, session)
+    codeToSessionId.set(code, sessionId)
+
+    // Auto-expire after 2 hours
+    setTimeout(() => {
+      this.expireSession(sessionId)
+    }, 2 * 60 * 60 * 1000)
+
+    return session
+  },
+
+  getSessionByCode(code: string): Session | undefined {
+    const sessionId = codeToSessionId.get(code)
+    if (!sessionId) return undefined
+    return sessions.get(sessionId)
+  },
+
+  getSessionById(sessionId: string): Session | undefined {
+    return sessions.get(sessionId)
+  },
+
+  joinSession(code: string, username: string, socketId?: string): Session | null {
+    const session = this.getSessionByCode(code)
+    if (!session) return null
+    if (session.status !== 'waiting') return null
+    if (session.joiner) return null // Already has a joiner
+
+    session.joiner = {
+      username,
+      socketId,
+    }
+    session.status = 'active'
+    sessions.set(session.id, session)
+
+    return session
+  },
+
+  updateReadyStatus(sessionId: string, username: string, ready: boolean): Session | null {
+    const session = sessions.get(sessionId)
+    if (!session) return null
+
+    session.readyStatus[username] = ready
+    sessions.set(sessionId, session)
+
+    return session
+  },
+
+  areBothReady(sessionId: string): boolean {
+    const session = sessions.get(sessionId)
+    if (!session || !session.joiner) return false
+
+    const creatorReady = session.readyStatus[session.creator.username] || false
+    const joinerReady = session.readyStatus[session.joiner.username] || false
+
+    return creatorReady && joinerReady
+  },
+
+  updateSocketId(sessionId: string, username: string, socketId: string): void {
+    const session = sessions.get(sessionId)
+    if (!session) return
+
+    if (session.creator.username === username) {
+      session.creator.socketId = socketId
+    } else if (session.joiner && session.joiner.username === username) {
+      session.joiner.socketId = socketId
+    }
+
+    sessions.set(sessionId, session)
+  },
+
+  updateSession(sessionId: string, updates: Partial<Session>): Session | null {
+    const session = sessions.get(sessionId)
+    if (!session) return null
+
+    const updated = { ...session, ...updates }
+    sessions.set(sessionId, updated)
+
+    return updated
+  },
+
+  expireSession(sessionId: string): void {
+    const session = sessions.get(sessionId)
+    if (!session) return
+
+    session.status = 'expired'
+    sessions.set(sessionId, session)
+
+    // Clean up after 24 hours
+    setTimeout(() => {
+      sessions.delete(sessionId)
+      codeToSessionId.delete(session.code)
+    }, 24 * 60 * 60 * 1000)
+  },
+
+  completeSession(sessionId: string): Session | null {
+    const session = sessions.get(sessionId)
+    if (!session) return null
+
+    session.status = 'completed'
+    sessions.set(sessionId, session)
+
+    return session
+  },
+}
