@@ -68,6 +68,21 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+// Root route (Railway health check)
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: '(un)wrapped API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      session: '/api/session',
+      activity: '/api/activity',
+      spotify: '/api/spotify'
+    }
+  })
+})
+
 console.log('🔧 Setting up Socket.io handlers...')
 // Setup Socket.io handlers
 setupSocketHandlers(io)
@@ -80,6 +95,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 const PORT = parseInt(process.env.PORT || '3001', 10)
 const HOST = '0.0.0.0'
+
+console.log(`📋 Environment PORT: ${process.env.PORT || 'not set (using default 3001)'}`)
+console.log(`📋 Parsed PORT: ${PORT}`)
+console.log(`📋 HOST: ${HOST}`)
 
 // Global error handlers
 process.on('uncaughtException', (error) => {
