@@ -5,6 +5,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import { sessionRouter } from './routes/session'
 import { activityRouter } from './routes/activity'
+import { spotifyRouter } from './routes/spotify'
 import { setupSocketHandlers } from './socket/handlers'
 
 dotenv.config()
@@ -30,6 +31,7 @@ app.use(express.urlencoded({ extended: true }))
 // Routes
 app.use('/api/session', sessionRouter)
 app.use('/api/activity', activityRouter)
+app.use('/api/spotify', spotifyRouter)
 
 // Health check
 app.get('/health', (req, res) => {

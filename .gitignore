@@ -25,6 +25,11 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Credentials
+CREDENTIALS.txt
+*.credentials
+*.secrets
+
 # IDE
 .vscode/
 .idea/
