@@ -48,9 +48,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 })
 
 const PORT = process.env.PORT || 3001
+const HOST = '0.0.0.0'
 
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
+httpServer.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on ${HOST}:${PORT}`)
   console.log(`📡 WebSocket server ready`)
 })
 
