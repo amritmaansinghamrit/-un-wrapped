@@ -47,7 +47,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Something went wrong!' })
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = parseInt(process.env.PORT || '3001', 10)
 const HOST = '0.0.0.0'
 
 httpServer.listen(PORT, HOST, () => {
