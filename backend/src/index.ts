@@ -35,8 +35,11 @@ function validateEnvironment() {
 // Validate environment before starting
 validateEnvironment()
 
+console.log('🔧 Creating Express app...')
 const app = express()
 const httpServer = createServer(app)
+
+console.log('🔧 Initializing Socket.io...')
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
@@ -45,6 +48,7 @@ const io = new Server(httpServer, {
   },
 })
 
+console.log('🔧 Setting up middleware...')
 // Middleware
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
@@ -53,6 +57,7 @@ app.use(cors({
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
+console.log('🔧 Registering routes...')
 // Routes
 app.use('/api/session', sessionRouter)
 app.use('/api/activity', activityRouter)
@@ -63,6 +68,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+console.log('🔧 Setting up Socket.io handlers...')
 // Setup Socket.io handlers
 setupSocketHandlers(io)
 
@@ -75,9 +81,33 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 const PORT = parseInt(process.env.PORT || '3001', 10)
 const HOST = '0.0.0.0'
 
+// Global error handlers
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error)
+  process.exit(1)
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason)
+  process.exit(1)
+})
+
+// Server error handler
+httpServer.on('error', (error: any) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use`)
+  } else {
+    console.error('❌ Server error:', error)
+  }
+  process.exit(1)
+})
+
+console.log(`🔧 Starting server on ${HOST}:${PORT}...`)
+
 httpServer.listen(PORT, HOST, () => {
   console.log(`🚀 Server running on ${HOST}:${PORT}`)
   console.log(`📡 WebSocket server ready`)
+  console.log(`🌐 Health check: http://${HOST}:${PORT}/health`)
 })
 
 export { io }
