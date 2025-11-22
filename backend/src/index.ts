@@ -10,6 +10,31 @@ import { setupSocketHandlers } from './socket/handlers'
 
 dotenv.config()
 
+// Validate required environment variables
+function validateEnvironment() {
+  const required = [
+    'SPOTIFY_CLIENT_ID',
+    'SPOTIFY_CLIENT_SECRET',
+    'CLOUDINARY_CLOUD_NAME',
+    'CLOUDINARY_API_KEY',
+    'CLOUDINARY_API_SECRET',
+  ]
+
+  const missing = required.filter((key) => !process.env[key])
+
+  if (missing.length > 0) {
+    console.error('❌ Missing required environment variables:')
+    missing.forEach((key) => console.error(`   - ${key}`))
+    console.error('\n💡 Please set these in Railway dashboard: Settings > Variables')
+    process.exit(1)
+  }
+
+  console.log('✅ All required environment variables are set')
+}
+
+// Validate environment before starting
+validateEnvironment()
+
 const app = express()
 const httpServer = createServer(app)
 const io = new Server(httpServer, {
