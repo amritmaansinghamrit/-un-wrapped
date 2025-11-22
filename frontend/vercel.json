@@ -3,11 +3,5 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next",
-  "regions": ["iad1"],
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@unwrapped_api_url",
-    "NEXT_PUBLIC_SOCKET_URL": "@unwrapped_socket_url",
-    "NEXT_PUBLIC_SPOTIFY_CLIENT_ID": "@unwrapped_spotify_client_id"
-  }
+  "outputDirectory": ".next"
 }
