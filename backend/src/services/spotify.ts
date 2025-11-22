@@ -30,6 +30,10 @@ async function getAccessToken(): Promise<string> {
     accessToken = response.data.access_token
     tokenExpiry = Date.now() + response.data.expires_in * 1000
 
+    if (!accessToken) {
+      throw new Error('No access token received from Spotify')
+    }
+
     return accessToken
   } catch (error) {
     console.error('Error getting Spotify token:', error)
