@@ -28,7 +28,7 @@ export default function CreateTogetherPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const currentPath = useRef<{ x: number; y: number }[]>([])
 
-  const userColor = currentUser?.username.charCodeAt(0) % 2 === 0 ? '#3B82F6' : '#EC4899'
+  const userColor = (currentUser?.username?.charCodeAt(0) ?? 0) % 2 === 0 ? '#3B82F6' : '#EC4899'
 
   // Listen for partner strokes
   useEffect(() => {
