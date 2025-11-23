@@ -4,13 +4,18 @@ import { customAlphabet } from 'nanoid'
 // Generate 6-character alphanumeric codes (like XK9P2M)
 const nanoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 6)
 
+// Generate secure tokens (32 characters)
+const generateToken = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', 32)
+
 // In-memory store for MVP (replace with Redis in production)
 const sessions = new Map<string, Session>()
 const codeToSessionId = new Map<string, string>()
+const userTokens = new Map<string, { sessionId: string; username: string; isCreator: boolean }>()
 
 export const sessionStore = {
-  createSession(username: string, socketId?: string): Session {
+  createSession(username: string, socketId?: string): { session: Session; token: string } {
     const code = nanoid()
+    const token = generateToken()
     const sessionId = `session_${Date.now()}_${code}`
     const now = new Date()
     const expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1000) // 2 hours
@@ -38,13 +43,14 @@ export const sessionStore = {
 
     sessions.set(sessionId, session)
     codeToSessionId.set(code, sessionId)
+    userTokens.set(token, { sessionId, username, isCreator: true })
 
     // Auto-expire after 2 hours
     setTimeout(() => {
       this.expireSession(sessionId)
     }, 2 * 60 * 60 * 1000)
 
-    return session
+    return { session, token }
   },
 
   getSessionByCode(code: string): Session | undefined {
@@ -57,11 +63,13 @@ export const sessionStore = {
     return sessions.get(sessionId)
   },
 
-  joinSession(code: string, username: string, socketId?: string): Session | null {
+  joinSession(code: string, username: string, socketId?: string): { session: Session; token: string } | null {
     const session = this.getSessionByCode(code)
     if (!session) return null
     if (session.status !== 'waiting') return null
     if (session.joiner) return null // Already has a joiner
+
+    const token = generateToken()
 
     session.joiner = {
       username,
@@ -69,8 +77,13 @@ export const sessionStore = {
     }
     session.status = 'active'
     sessions.set(session.id, session)
+    userTokens.set(token, { sessionId: session.id, username, isCreator: false })
 
-    return session
+    return { session, token }
+  },
+
+  validateToken(token: string): { sessionId: string; username: string; isCreator: boolean } | null {
+    return userTokens.get(token) || null
   },
 
   updateReadyStatus(sessionId: string, username: string, ready: boolean): Session | null {

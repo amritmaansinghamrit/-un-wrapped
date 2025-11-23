@@ -8,7 +8,7 @@ export function setupSocketHandlers(io: Server) {
     // Session creation
     socket.on('session:create', ({ username }: { username: string }) => {
       try {
-        const session = sessionStore.createSession(username, socket.id)
+        const { session, token } = sessionStore.createSession(username, socket.id)
 
         // Join room
         socket.join(session.code)
@@ -16,6 +16,7 @@ export function setupSocketHandlers(io: Server) {
         socket.emit('session:created', {
           sessionId: session.id,
           code: session.code,
+          token,
         })
 
         console.log(`✅ Session created: ${session.code} by ${username}`)
@@ -30,12 +31,14 @@ export function setupSocketHandlers(io: Server) {
       'session:join',
       ({ code, username }: { code: string; username: string }) => {
         try {
-          const session = sessionStore.joinSession(code, username, socket.id)
+          const result = sessionStore.joinSession(code, username, socket.id)
 
-          if (!session) {
+          if (!result) {
             socket.emit('error', { message: 'Session not found or already full' })
             return
           }
+
+          const { session, token } = result
 
           // Join room
           socket.join(code)
@@ -44,10 +47,18 @@ export function setupSocketHandlers(io: Server) {
           socket.emit('session:joined', {
             sessionId: session.id,
             code: session.code,
+            token,
+            creator: {
+              username: session.creator.username,
+              isReady: session.readyStatus[session.creator.username] || false
+            }
           })
 
-          // Notify creator
-          io.to(code).emit('partner:joined', { username })
+          // Notify creator only (not the joiner)
+          socket.to(code).emit('partner:joined', {
+            username,
+            isReady: false
+          })
 
           console.log(`✅ ${username} joined session: ${code}`)
         } catch (error) {
@@ -70,11 +81,12 @@ export function setupSocketHandlers(io: Server) {
 
           sessionStore.updateReadyStatus(session.id, username, true)
 
-          // Notify room
-          io.to(sessionCode).emit('partner:ready', { username })
+          // Notify partner only (not the user who just got ready)
+          socket.to(sessionCode).emit('partner:ready', { username })
 
           // Check if both ready
           if (sessionStore.areBothReady(session.id)) {
+            // Notify everyone when both are ready
             io.to(sessionCode).emit('both:ready')
             console.log(`🎉 Both users ready in session: ${sessionCode}`)
           }
