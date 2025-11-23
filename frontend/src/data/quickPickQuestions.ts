@@ -9,7 +9,7 @@ export const QUICK_PICK_QUESTIONS: QuickPickQuestion[] = [
   { id: 'q17', question: 'Date night: Indoor or Outdoor?', optionA: 'Indoor', optionB: 'Outdoor' },
 
   // Daily Life Together
-  { id: 'q4', question: 'I'm more of a: Morning person or Night owl?', optionA: 'Morning bird', optionB: 'Night owl' },
+  { id: 'q4', question: "I'm more of a: Morning person or Night owl?", optionA: 'Morning bird', optionB: 'Night owl' },
   { id: 'q8', question: 'Our morning ritual: Coffee or Tea?', optionA: 'Coffee', optionB: 'Tea' },
   { id: 'q12', question: 'Dinner together: Cook or Order in?', optionA: 'Cook', optionB: 'Order in' },
   { id: 'q13', question: 'Friday night: Go out or Stay in?', optionA: 'Party', optionB: 'Netflix' },
