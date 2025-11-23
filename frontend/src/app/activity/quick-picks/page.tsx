@@ -167,7 +167,7 @@ export default function QuickPicksPage() {
           <div className="flex items-center gap-3 flex-1">
             <div className="relative">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                {currentUser?.username[0].toUpperCase()}
+                {currentUser?.username?.[0]?.toUpperCase() || 'Y'}
               </div>
               {selectedAnswer && (
                 <motion.div
@@ -198,7 +198,7 @@ export default function QuickPicksPage() {
           <div className="flex items-center gap-3 flex-1 flex-row-reverse">
             <div className="relative">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                {partnerUser?.username[0].toUpperCase() || '?'}
+                {partnerUser?.username?.[0]?.toUpperCase() || '?'}
               </div>
               {partnerAnswered && (
                 <motion.div
