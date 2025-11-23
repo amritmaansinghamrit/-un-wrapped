@@ -20,14 +20,80 @@ export default function YourSoundPage() {
   const [selectedSong, setSelectedSong] = useState<SpotifyTrack | null>(null)
   const [rating, setRating] = useState(5)
   const [partnerAnswered, setPartnerAnswered] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   const currentPrompt = SONG_PROMPTS[currentPromptIndex]
+
+  // Initialize synchronized activity
+  useEffect(() => {
+    if (!sessionCode) return
+
+    try {
+      // Tell server to initialize activity
+      socket.emit('activity:start', {
+        sessionCode,
+        activity: 'your-sound',
+        questions: SONG_PROMPTS,
+      })
+
+      // Listen for current question from server
+      socket.on('question:current', ({ questionIndex }) => {
+        try {
+          if (questionIndex !== undefined) {
+            setCurrentPromptIndex(questionIndex)
+          }
+        } catch (error) {
+          console.error('Error handling question:current:', error)
+        }
+      })
+
+      // Listen for next prompt from server
+      socket.on('question:next', ({ questionIndex }) => {
+        try {
+          setIsTransitioning(true)
+          setTimeout(() => {
+            setCurrentPromptIndex(questionIndex)
+            setSearchQuery('')
+            setSearchResults([])
+            setSelectedSong(null)
+            setRating(5)
+            setPartnerAnswered(false)
+            setIsTransitioning(false)
+          }, 500)
+        } catch (error) {
+          console.error('Error handling question:next:', error)
+          setIsTransitioning(false)
+        }
+      })
+
+      // Listen for activity complete
+      socket.on('activity:complete', () => {
+        try {
+          router.push('/activity/in-your-own-words')
+        } catch (error) {
+          console.error('Error handling activity:complete:', error)
+        }
+      })
+    } catch (error) {
+      console.error('Error initializing your-sound activity:', error)
+    }
+
+    return () => {
+      socket.off('question:current')
+      socket.off('question:next')
+      socket.off('activity:complete')
+    }
+  }, [sessionCode, socket, router])
 
   // Listen for partner answers
   useEffect(() => {
     socket.on('partner:answered', ({ activity }: { activity: string }) => {
-      if (activity === 'your-sound') {
-        setPartnerAnswered(true)
+      try {
+        if (activity === 'your-sound') {
+          setPartnerAnswered(true)
+        }
+      } catch (error) {
+        console.error('Error handling partner:answered:', error)
       }
     })
 
@@ -58,47 +124,39 @@ export default function YourSoundPage() {
     if (currentPrompt.type === 'search' && !selectedSong) return
     if (currentPrompt.type === 'rating' && !rating) return
 
-    // Get audio features for selected song
-    let audioFeatures = null
-    if (selectedSong) {
-      audioFeatures = await getTrackAudioFeatures(selectedSong.id)
-    }
-
-    // Emit to partner
-    socket.emit('activity:answer', {
-      sessionCode,
-      activity: 'your-sound',
-      answer: {
-        promptId: currentPrompt.id,
-        song: selectedSong
-          ? {
-              spotifyId: selectedSong.id,
-              title: selectedSong.name,
-              artist: selectedSong.artists[0].name,
-              albumArt: selectedSong.album.images[0]?.url,
-              previewUrl: selectedSong.preview_url,
-              audioFeatures,
-            }
-          : null,
-        rating: currentPrompt.type === 'rating' ? rating : null,
-      },
-      username: currentUser?.username,
-    })
-
-    // Move to next prompt
-    setTimeout(() => {
-      if (currentPromptIndex < SONG_PROMPTS.length - 1) {
-        setCurrentPromptIndex((prev) => prev + 1)
-        setSearchQuery('')
-        setSearchResults([])
-        setSelectedSong(null)
-        setRating(5)
-        setPartnerAnswered(false)
-      } else {
-        // All prompts complete, move to next activity
-        router.push('/activity/in-your-own-words')
+    try {
+      // Get audio features for selected song
+      let audioFeatures = null
+      if (selectedSong) {
+        audioFeatures = await getTrackAudioFeatures(selectedSong.id)
       }
-    }, 1500)
+
+      // Emit to partner - server will control advancement
+      socket.emit('activity:answer', {
+        sessionCode,
+        activity: 'your-sound',
+        answer: {
+          promptId: currentPrompt.id,
+          song: selectedSong
+            ? {
+                spotifyId: selectedSong.id,
+                title: selectedSong.name,
+                artist: selectedSong.artists[0].name,
+                albumArt: selectedSong.album.images[0]?.url,
+                previewUrl: selectedSong.preview_url,
+                audioFeatures,
+              }
+            : null,
+          rating: currentPrompt.type === 'rating' ? rating : null,
+        },
+        username: currentUser?.username,
+      })
+
+      // Server will send question:next when both users have answered
+      // No client-side auto-advance!
+    } catch (error) {
+      console.error('Error submitting song answer:', error)
+    }
   }
 
   const progress = ((currentPromptIndex + 1) / SONG_PROMPTS.length) * 100
@@ -248,11 +306,11 @@ export default function YourSoundPage() {
                   onClick={handleSubmit}
                   disabled={
                     (currentPrompt.type === 'search' && !selectedSong) ||
-                    partnerAnswered
+                    isTransitioning
                   }
                   className="w-full mt-6 touch-button bg-white text-purple-600 font-semibold text-lg py-4 px-8 rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                 >
-                  {partnerAnswered ? 'Moving on...' : 'Continue'}
+                  {partnerAnswered ? 'Waiting for partner...' : 'Continue'}
                 </motion.button>
               </div>
 
