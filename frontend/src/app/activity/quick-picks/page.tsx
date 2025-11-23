@@ -13,7 +13,7 @@ const QUESTIONS_COUNT = 7
 
 export default function QuickPicksPage() {
   const router = useRouter()
-  const { currentUser, sessionCode } = useSessionStore()
+  const { currentUser, sessionCode, partnerUser } = useSessionStore()
   const socket = getSocket()
 
   const [questions, setQuestions] = useState<QuickPickQuestion[]>([])
@@ -156,7 +156,6 @@ export default function QuickPicksPage() {
 
   const currentQuestion = questions[currentQuestionIndex]
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100
-  const { partnerUser } = useSessionStore()
 
   return (
     <main className="min-h-screen flex flex-col bg-white p-4">
