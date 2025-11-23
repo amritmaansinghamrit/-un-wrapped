@@ -25,7 +25,8 @@ export class AudioRecorder {
         }
       }
 
-      this.mediaRecorder.start()
+      // Start with timeslice to collect data continuously for waveform
+      this.mediaRecorder.start(100) // Collect data every 100ms
     } catch (error) {
       console.error('Error starting recording:', error)
       throw new Error('Failed to access microphone')

@@ -21,12 +21,48 @@ export default function InYourOwnWordsPage() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [waveform, setWaveform] = useState<number[]>([])
   const [partnerAnswered, setPartnerAnswered] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   const recorderRef = useRef<AudioRecorder | null>(null)
   const animationFrameRef = useRef<number>()
   const timerRef = useRef<NodeJS.Timeout>()
 
   const currentPrompt = VOICE_PROMPTS[currentPromptIndex]
+
+  // Initialize synchronized activity
+  useEffect(() => {
+    if (!sessionCode) return
+
+    // Tell server to initialize activity
+    socket.emit('activity:start', {
+      sessionCode,
+      activity: 'in-your-own-words',
+      questions: VOICE_PROMPTS,
+    })
+
+    // Listen for next prompt from server
+    socket.on('question:next', ({ questionIndex }) => {
+      setIsTransitioning(true)
+      setTimeout(() => {
+        setCurrentPromptIndex(questionIndex)
+        setAudioBlob(null)
+        setRecordingTime(0)
+        setWaveform([])
+        setPartnerAnswered(false)
+        setIsTransitioning(false)
+      }, 500)
+    })
+
+    // Listen for activity complete
+    socket.on('activity:complete', () => {
+      router.push('/activity/the-moments')
+    })
+
+    return () => {
+      socket.off('question:next')
+      socket.off('activity:complete')
+    }
+  }, [sessionCode, socket, router])
 
   // Listen for partner answers
   useEffect(() => {
@@ -73,11 +109,12 @@ export default function InYourOwnWordsPage() {
       // Start timer
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => {
-          if (prev >= MAX_DURATION - 1) {
+          const newTime = prev + 1
+          if (newTime >= MAX_DURATION) {
             handleStopRecording()
             return MAX_DURATION
           }
-          return prev + 1
+          return newTime
         })
       }, 1000)
 
@@ -112,44 +149,31 @@ export default function InYourOwnWordsPage() {
   }
 
   const handleSubmit = async () => {
-    if (!audioBlob) return
+    if (!audioBlob || isTransitioning) return
 
     // Get final waveform and frequencies
     const frequencies = recorderRef.current?.getFrequencies() || []
 
-    // Convert blob to base64 for transmission (in production, upload to S3)
+    // Convert blob to base64 for transmission (in production, upload to S3/Cloudinary)
     const reader = new FileReader()
     reader.readAsDataURL(audioBlob)
     reader.onloadend = () => {
       const base64Audio = reader.result as string
 
-      // Emit to partner
+      // Emit to server (server will advance when both answered)
       socket.emit('activity:answer', {
         sessionCode,
         activity: 'in-your-own-words',
         answer: {
           promptId: currentPrompt.id,
-          audio: base64Audio, // In production, this would be an S3 URL
+          audio: base64Audio,
           duration: recordingTime,
           frequencies,
           waveform,
         },
         username: currentUser?.username,
       })
-
-      // Move to next prompt
-      setTimeout(() => {
-        if (currentPromptIndex < VOICE_PROMPTS.length - 1) {
-          setCurrentPromptIndex((prev) => prev + 1)
-          setAudioBlob(null)
-          setRecordingTime(0)
-          setWaveform([])
-          setPartnerAnswered(false)
-        } else {
-          // All prompts complete, move to next activity
-          router.push('/activity/the-moments')
-        }
-      }, 1500)
+      // No auto-advance - server controls this now!
     }
   }
 
@@ -235,20 +259,26 @@ export default function InYourOwnWordsPage() {
                 {!audioBlob && (
                   <div className="flex justify-center mb-6">
                     <motion.button
-                      onMouseDown={handleStartRecording}
-                      onMouseUp={handleStopRecording}
-                      onTouchStart={handleStartRecording}
-                      onTouchEnd={handleStopRecording}
+                      onPointerDown={handleStartRecording}
+                      onPointerUp={handleStopRecording}
+                      onPointerCancel={handleStopRecording}
+                      onPointerLeave={(e) => {
+                        // Stop if pointer leaves button while recording
+                        if (isRecording && e.pointerType === 'touch') {
+                          handleStopRecording()
+                        }
+                      }}
                       whileTap={{ scale: 0.9 }}
                       className={`
                         w-24 h-24 rounded-full flex items-center justify-center
-                        transition-all duration-300 shadow-2xl
+                        transition-all duration-300 shadow-2xl touch-none
                         ${
                           isRecording
                             ? 'bg-red-500 animate-pulse'
                             : 'bg-white hover:scale-105'
                         }
                       `}
+                      style={{ touchAction: 'none' }}
                     >
                       {isRecording ? (
                         <div className="w-8 h-8 bg-white rounded-sm" />
