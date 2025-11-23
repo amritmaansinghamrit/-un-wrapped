@@ -51,14 +51,15 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
+          <div className="text-6xl mb-6">💝</div>
           <h1 className="text-5xl font-serif font-semibold text-white mb-4">
             (un)wrapped
           </h1>
           <p className="text-2xl text-white/90 mb-2 font-medium">
-            25 minutes that actually matter
+            25 minutes to discover each other
           </p>
           <p className="text-lg text-white/80 mb-12">
-            Create something unique to just you two
+            Create a moment that's uniquely yours
           </p>
         </motion.div>
 
@@ -80,8 +81,8 @@ export default function Home() {
           transition={{ delay: 0.6, duration: 0.4 }}
           className="mt-8 text-white/70 text-sm"
         >
-          <p>No login required · Just 25 minutes</p>
-          <p className="mt-2">Best experienced together</p>
+          <p>No login required · Just the two of you</p>
+          <p className="mt-2">A shared experience made with love</p>
         </motion.div>
       </div>
 

@@ -6,14 +6,22 @@ export interface VoicePrompt {
 export const VOICE_PROMPTS: VoicePrompt[] = [
   {
     id: 'vp1',
-    prompt: 'First impression in one sentence',
+    prompt: 'What was your first thought when we met?',
   },
   {
     id: 'vp2',
-    prompt: 'Why them?',
+    prompt: 'What makes us... us?',
   },
   {
     id: 'vp3',
-    prompt: 'Our inside joke',
+    prompt: 'Share our inside joke that no one else gets',
+  },
+  {
+    id: 'vp4',
+    prompt: 'A moment with them you never want to forget',
+  },
+  {
+    id: 'vp5',
+    prompt: 'What do you love most about them?',
   },
 ]

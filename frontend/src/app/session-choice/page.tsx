@@ -27,10 +27,10 @@ export default function SessionChoicePage() {
           className="text-center mb-12"
         >
           <h1 className="text-4xl font-serif font-semibold text-white mb-3">
-            Hey, {currentUser.username}!
+            Hey, {currentUser.username}! 💕
           </h1>
           <p className="text-white/80">
-            Ready to create something unique?
+            Ready to create a moment together?
           </p>
         </motion.div>
 

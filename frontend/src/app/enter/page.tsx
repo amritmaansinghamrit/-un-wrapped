@@ -38,7 +38,7 @@ export default function EnterPage() {
             What should we call you?
           </h1>
           <p className="text-white/80">
-            Pick a name - no password needed
+            Just a name to get started - no password needed
           </p>
         </motion.div>
 
