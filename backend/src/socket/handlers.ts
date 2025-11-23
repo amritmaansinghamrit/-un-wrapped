@@ -1,5 +1,6 @@
 import { Server, Socket } from 'socket.io'
 import { sessionStore } from '../utils/sessionStore'
+import { Logger } from '../utils/logger'
 
 export function setupSocketHandlers(io: Server) {
   io.on('connection', (socket: Socket) => {
@@ -111,6 +112,7 @@ export function setupSocketHandlers(io: Server) {
         // Only initialize if not already initialized (first user to arrive)
         if (!session.questionSync?.currentActivity || session.questionSync.currentActivity !== activity) {
           sessionStore.initializeActivity(session.id, activity, questions)
+          Logger.activityStarted(session.id, sessionCode, activity, 'system')
           console.log(`🎮 Activity initialized: ${activity} for session ${sessionCode}`)
         }
 
@@ -148,6 +150,9 @@ export function setupSocketHandlers(io: Server) {
 
         const { bothAnswered } = result
 
+        // Log the answer
+        Logger.logEvent(session.id, sessionCode, 'answer:submitted', { activity, answer }, username)
+
         // Notify partner that user answered
         socket.to(sessionCode).emit('partner:answered', {
           activity,
@@ -174,6 +179,7 @@ export function setupSocketHandlers(io: Server) {
               console.log(`➡️  Advanced to question ${currentQuestionIndex + 1} in ${sessionCode}`)
             } else {
               // Activity complete
+              Logger.activityCompleted(session.id, sessionCode, activity)
               io.to(sessionCode).emit('activity:complete', { activity })
               console.log(`✅ Activity complete: ${activity} in ${sessionCode}`)
             }

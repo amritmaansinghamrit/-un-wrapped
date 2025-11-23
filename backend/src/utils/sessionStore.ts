@@ -1,5 +1,6 @@
 import { Session } from '../types'
 import { customAlphabet } from 'nanoid'
+import { Logger } from './logger'
 
 // Generate 6-character alphanumeric codes (like XK9P2M)
 const nanoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 6)
@@ -51,6 +52,9 @@ export const sessionStore = {
     codeToSessionId.set(code, sessionId)
     userTokens.set(token, { sessionId, username, isCreator: true })
 
+    // Log session creation
+    Logger.createSession(sessionId, code, username)
+
     // Auto-expire after 2 hours
     setTimeout(() => {
       this.expireSession(sessionId)
@@ -84,6 +88,9 @@ export const sessionStore = {
     session.status = 'active'
     sessions.set(session.id, session)
     userTokens.set(token, { sessionId: session.id, username, isCreator: false })
+
+    // Log partner joining
+    Logger.partnerJoined(session.id, session.code, username)
 
     return { session, token }
   },

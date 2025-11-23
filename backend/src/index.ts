@@ -6,6 +6,7 @@ import dotenv from 'dotenv'
 import { sessionRouter } from './routes/session'
 import { activityRouter } from './routes/activity'
 import { spotifyRouter } from './routes/spotify'
+import analyticsRouter from './routes/analytics'
 import { setupSocketHandlers } from './socket/handlers'
 
 dotenv.config()
@@ -62,6 +63,7 @@ console.log('🔧 Registering routes...')
 app.use('/api/session', sessionRouter)
 app.use('/api/activity', activityRouter)
 app.use('/api/spotify', spotifyRouter)
+app.use('/api/analytics', analyticsRouter)
 
 // Health check
 app.get('/health', (req, res) => {
@@ -78,7 +80,8 @@ app.get('/', (req, res) => {
       health: '/health',
       session: '/api/session',
       activity: '/api/activity',
-      spotify: '/api/spotify'
+      spotify: '/api/spotify',
+      analytics: '/api/analytics'
     }
   })
 })
