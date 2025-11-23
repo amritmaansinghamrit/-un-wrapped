@@ -10,7 +10,7 @@ export default function JoinSessionPage() {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [isJoining, setIsJoining] = useState(false)
-  const { currentUser, setSessionCode } = useSessionStore()
+  const { currentUser, setSessionCode, setSessionToken, setPartnerUser } = useSessionStore()
 
   useEffect(() => {
     if (!currentUser) {
@@ -32,8 +32,13 @@ export default function JoinSessionPage() {
       username: currentUser?.username,
     })
 
-    socket.on('session:joined', () => {
+    socket.on('session:joined', ({ token, creator }: { token: string; creator: { username: string; isReady: boolean } }) => {
       setSessionCode(code.toUpperCase())
+      setSessionToken(token)
+      // Set the creator as partner
+      setPartnerUser({ username: creator.username, isReady: creator.isReady })
+      // Store token in localStorage for reconnection
+      localStorage.setItem('unwrapped_token', token)
       router.push('/waiting-room')
     })
 

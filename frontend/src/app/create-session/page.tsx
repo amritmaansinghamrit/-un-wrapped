@@ -9,7 +9,7 @@ import { connectSocket } from '@/lib/socket'
 export default function CreateSessionPage() {
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
-  const { currentUser, sessionCode, setSessionCode, setWaitingForPartner } =
+  const { currentUser, setSessionCode, setSessionToken, setWaitingForPartner } =
     useSessionStore()
 
   useEffect(() => {
@@ -24,10 +24,13 @@ export default function CreateSessionPage() {
 
       socket.emit('session:create', { username: currentUser.username })
 
-      socket.on('session:created', ({ code }: { code: string }) => {
+      socket.on('session:created', ({ code, token }: { code: string; token: string }) => {
         setSessionCode(code)
+        setSessionToken(token)
         setWaitingForPartner(true)
         setIsCreating(false)
+        // Store token in localStorage for reconnection
+        localStorage.setItem('unwrapped_token', token)
         router.push('/waiting-room')
       })
 
@@ -38,7 +41,7 @@ export default function CreateSessionPage() {
     }
 
     createSession()
-  }, [currentUser, router, setSessionCode, setWaitingForPartner])
+  }, [currentUser, router, setSessionCode, setSessionToken, setWaitingForPartner])
 
   if (!currentUser) return null
 

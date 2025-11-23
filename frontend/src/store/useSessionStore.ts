@@ -5,6 +5,7 @@ interface SessionStore {
   // Session state
   session: Session | null
   sessionCode: string | null
+  sessionToken: string | null
   currentUser: User | null
   partnerUser: User | null
 
@@ -19,6 +20,7 @@ interface SessionStore {
   // Actions
   setSession: (session: Session) => void
   setSessionCode: (code: string) => void
+  setSessionToken: (token: string) => void
   setCurrentUser: (user: User) => void
   setPartnerUser: (user: User) => void
   setCurrentActivity: (index: number) => void
@@ -33,6 +35,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
   // Initial state
   session: null,
   sessionCode: null,
+  sessionToken: null,
   currentUser: null,
   partnerUser: null,
   currentActivity: -1, // -1 means waiting room, 0-4 are activities, 5+ are reveal screens
@@ -43,6 +46,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
   // Actions
   setSession: (session) => set({ session }),
   setSessionCode: (code) => set({ sessionCode: code }),
+  setSessionToken: (token) => set({ sessionToken: token }),
   setCurrentUser: (user) => set({ currentUser: user }),
   setPartnerUser: (user) => set({ partnerUser: user }),
   setCurrentActivity: (index) => set({ currentActivity: index }),
@@ -65,6 +69,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
     set({
       session: null,
       sessionCode: null,
+      sessionToken: null,
       currentUser: null,
       partnerUser: null,
       currentActivity: -1,
