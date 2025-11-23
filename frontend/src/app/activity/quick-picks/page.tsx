@@ -156,139 +156,190 @@ export default function QuickPicksPage() {
 
   const currentQuestion = questions[currentQuestionIndex]
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100
+  const { partnerUser } = useSessionStore()
 
   return (
-    <main className="min-h-screen flex flex-col bg-gradient-to-br from-primary-purple via-purple-400 to-primary-pink p-6">
-      {/* Header */}
-      <div className="w-full max-w-md mx-auto mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-white font-semibold">Quick Picks</h2>
-          <span className="text-white/80 text-sm">
-            {currentQuestionIndex + 1} / {questions.length}
-          </span>
+    <main className="min-h-screen flex flex-col bg-white p-4">
+      {/* QuizUp-style Player Status Bar */}
+      <div className="w-full max-w-2xl mx-auto mb-6">
+        <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl p-4 shadow-sm">
+          {/* You */}
+          <div className="flex items-center gap-3 flex-1">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                {currentUser?.username[0].toUpperCase()}
+              </div>
+              {selectedAnswer && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
+                >
+                  <span className="text-white text-xs font-bold">✓</span>
+                </motion.div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900 truncate">{currentUser?.username}</p>
+              <p className="text-xs text-gray-500">
+                {selectedAnswer ? 'Answered!' : 'Choosing...'}
+              </p>
+            </div>
+          </div>
+
+          {/* VS */}
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
+              VS
+            </div>
+          </div>
+
+          {/* Partner */}
+          <div className="flex items-center gap-3 flex-1 flex-row-reverse">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                {partnerUser?.username[0].toUpperCase() || '?'}
+              </div>
+              {partnerAnswered && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -left-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
+                >
+                  <span className="text-white text-xs font-bold">✓</span>
+                </motion.div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0 text-right">
+              <p className="font-semibold text-gray-900 truncate">
+                {partnerUser?.username || 'Partner'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {partnerAnswered ? 'Answered!' : 'Choosing...'}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-white"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.5 }}
-          />
+        <div className="mt-4 flex items-center gap-3">
+          <span className="text-sm font-medium text-gray-600">
+            {currentQuestionIndex + 1} of {questions.length}
+          </span>
+          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-rose-400 to-pink-500"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
         </div>
       </div>
 
       {/* Question Card */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-full max-w-md">
+      <div className="flex-1 flex items-center justify-center px-2">
+        <div className="w-full max-w-2xl">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentQuestionIndex}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
               className="relative"
             >
-              {/* Timer Circle */}
-              <div className="absolute -top-20 left-1/2 transform -translate-x-1/2">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle
-                      cx="32"
-                      cy="32"
-                      r="28"
-                      stroke="white"
-                      strokeOpacity="0.2"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <motion.circle
-                      cx="32"
-                      cy="32"
-                      r="28"
-                      stroke="white"
-                      strokeWidth="4"
-                      fill="none"
-                      strokeDasharray={2 * Math.PI * 28}
-                      strokeDashoffset={
-                        2 * Math.PI * 28 * (1 - timeLeft / TIMER_DURATION)
-                      }
-                      transition={{ duration: 1, ease: 'linear' }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">{timeLeft}</span>
+              {/* Hinge-style Card */}
+              <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+                {/* Timer Bar at top */}
+                <div className="relative h-1.5 bg-gray-100">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-rose-500 to-pink-500"
+                    animate={{ width: `${(timeLeft / TIMER_DURATION) * 100}%` }}
+                    transition={{ duration: 1, ease: 'linear' }}
+                  />
+                </div>
+
+                {/* Card Content */}
+                <div className="p-8">
+                  {/* Timer Display */}
+                  <div className="flex justify-center mb-6">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center">
+                        <span className="text-3xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
+                          {timeLeft}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Question */}
+                  <h1 className="text-3xl font-serif font-semibold text-gray-900 text-center mb-10 leading-tight">
+                    {currentQuestion.question}
+                  </h1>
+
+                  {/* Options - Full width stacked buttons */}
+                  <div className="space-y-4">
+                    {/* Option A */}
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleAnswer('A')}
+                      disabled={!!selectedAnswer || isTransitioning}
+                      className={`
+                        w-full touch-button py-6 px-6 rounded-2xl font-semibold text-lg
+                        transition-all duration-300 border-2
+                        ${
+                          selectedAnswer === 'A'
+                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-blue-600 shadow-lg scale-[1.02]'
+                            : 'bg-white text-gray-900 border-gray-200 hover:border-blue-400 hover:shadow-md'
+                        }
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                      `}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        {selectedAnswer === 'A' && <span>✓</span>}
+                        {currentQuestion.optionA}
+                      </span>
+                    </motion.button>
+
+                    {/* Option B */}
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleAnswer('B')}
+                      disabled={!!selectedAnswer || isTransitioning}
+                      className={`
+                        w-full touch-button py-6 px-6 rounded-2xl font-semibold text-lg
+                        transition-all duration-300 border-2
+                        ${
+                          selectedAnswer === 'B'
+                            ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white border-pink-600 shadow-lg scale-[1.02]'
+                            : 'bg-white text-gray-900 border-gray-200 hover:border-pink-400 hover:shadow-md'
+                        }
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                      `}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        {selectedAnswer === 'B' && <span>✓</span>}
+                        {currentQuestion.optionB}
+                      </span>
+                    </motion.button>
                   </div>
                 </div>
               </div>
 
-              {/* Question */}
-              <div className="glass rounded-3xl p-8 mb-6">
-                <h1 className="text-3xl font-serif font-semibold text-white text-center mb-8">
-                  {currentQuestion.question}
-                </h1>
-
-                {/* VS Divider */}
-                <div className="flex items-center justify-center mb-8">
-                  <div className="h-px flex-1 bg-white/20" />
-                  <span className="mx-4 text-white/60 font-semibold">VS</span>
-                  <div className="h-px flex-1 bg-white/20" />
-                </div>
-
-                {/* Options */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Option A */}
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleAnswer('A')}
-                    disabled={!!selectedAnswer || isTransitioning}
-                    className={`
-                      touch-button py-6 px-4 rounded-2xl font-semibold text-lg
-                      transition-all duration-300
-                      ${
-                        selectedAnswer === 'A'
-                          ? 'bg-blue-500 text-white scale-105'
-                          : 'bg-white/90 text-blue-600 hover:bg-white'
-                      }
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                    `}
-                  >
-                    {currentQuestion.optionA}
-                  </motion.button>
-
-                  {/* Option B */}
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleAnswer('B')}
-                    disabled={!!selectedAnswer || isTransitioning}
-                    className={`
-                      touch-button py-6 px-4 rounded-2xl font-semibold text-lg
-                      transition-all duration-300
-                      ${
-                        selectedAnswer === 'B'
-                          ? 'bg-pink-500 text-white scale-105'
-                          : 'bg-white/90 text-pink-600 hover:bg-white'
-                      }
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                    `}
-                  >
-                    {currentQuestion.optionB}
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* Partner Status */}
+              {/* Waiting indicator when both answered */}
               <AnimatePresence>
-                {partnerAnswered && (
+                {selectedAnswer && partnerAnswered && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    className="text-center text-white/80 text-sm"
+                    className="mt-6 bg-green-50 border-2 border-green-200 rounded-2xl p-4 text-center"
                   >
-                    ✓ Partner answered
+                    <p className="text-green-700 font-semibold flex items-center justify-center gap-2">
+                      <span className="text-2xl">🎉</span>
+                      Both answered! Moving to next question...
+                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>
