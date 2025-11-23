@@ -97,18 +97,88 @@ export function setupSocketHandlers(io: Server) {
       }
     )
 
-    // Activity answer submission
+    // Activity initialization (synchronized)
+    socket.on('activity:start', (data: { sessionCode: string; activity: string; questions: any[] }) => {
+      try {
+        const { sessionCode, activity, questions } = data
+        const session = sessionStore.getSessionByCode(sessionCode)
+
+        if (!session) {
+          socket.emit('error', { message: 'Session not found' })
+          return
+        }
+
+        // Only initialize if not already initialized (first user to arrive)
+        if (!session.questionSync?.currentActivity || session.questionSync.currentActivity !== activity) {
+          sessionStore.initializeActivity(session.id, activity, questions)
+          console.log(`🎮 Activity initialized: ${activity} for session ${sessionCode}`)
+        }
+
+        // Send current question to the user
+        const currentQuestion = sessionStore.getCurrentQuestion(session.id)
+        socket.emit('question:current', {
+          questionIndex: session.questionSync?.currentQuestionIndex || 0,
+          question: currentQuestion,
+          totalQuestions: session.questionSync?.questions.length || 0,
+        })
+      } catch (error) {
+        console.error('Error starting activity:', error)
+        socket.emit('error', { message: 'Failed to start activity' })
+      }
+    })
+
+    // Activity answer submission (synchronized)
     socket.on('activity:answer', (data: any) => {
       try {
         const { sessionCode, activity, answer, username } = data
+        const session = sessionStore.getSessionByCode(sessionCode)
 
-        // Broadcast to room (excluding sender)
+        if (!session) {
+          socket.emit('error', { message: 'Session not found' })
+          return
+        }
+
+        // Record that this user answered
+        const result = sessionStore.recordAnswer(session.id, username)
+
+        if (!result) {
+          socket.emit('error', { message: 'Failed to record answer' })
+          return
+        }
+
+        const { bothAnswered } = result
+
+        // Notify partner that user answered
         socket.to(sessionCode).emit('partner:answered', {
           activity,
           username,
         })
 
         console.log(`📝 Answer submitted by ${username} in ${sessionCode}`)
+
+        // If both answered, advance to next question
+        if (bothAnswered) {
+          const updatedSession = sessionStore.advanceQuestion(session.id)
+
+          if (updatedSession && updatedSession.questionSync) {
+            const nextQuestion = sessionStore.getCurrentQuestion(session.id)
+            const { currentQuestionIndex, questions } = updatedSession.questionSync
+
+            if (nextQuestion) {
+              // Send next question to both users
+              io.to(sessionCode).emit('question:next', {
+                questionIndex: currentQuestionIndex,
+                question: nextQuestion,
+                totalQuestions: questions.length,
+              })
+              console.log(`➡️  Advanced to question ${currentQuestionIndex + 1} in ${sessionCode}`)
+            } else {
+              // Activity complete
+              io.to(sessionCode).emit('activity:complete', { activity })
+              console.log(`✅ Activity complete: ${activity} in ${sessionCode}`)
+            }
+          }
+        }
       } catch (error) {
         console.error('Error handling answer:', error)
       }

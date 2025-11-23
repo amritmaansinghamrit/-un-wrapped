@@ -24,12 +24,53 @@ export default function QuickPicksPage() {
   const [partnerAnswered, setPartnerAnswered] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
 
-  // Initialize questions
+  // Initialize questions (synchronized with backend)
   useEffect(() => {
+    if (!sessionCode) return
+
     const selectedQuestions = getRandomQuestions(QUESTIONS_COUNT)
     setQuestions(selectedQuestions)
     setStartTime(Date.now())
-  }, [])
+
+    // Tell server to initialize activity with these questions
+    socket.emit('activity:start', {
+      sessionCode,
+      activity: 'quick-picks',
+      questions: selectedQuestions,
+    })
+
+    // Listen for current question from server
+    socket.on('question:current', ({ questionIndex, question }) => {
+      if (question) {
+        setCurrentQuestionIndex(questionIndex)
+        setStartTime(Date.now())
+      }
+    })
+
+    // Listen for next question from server (only advances when both answered)
+    socket.on('question:next', ({ questionIndex, question }) => {
+      setIsTransitioning(true)
+      setTimeout(() => {
+        setCurrentQuestionIndex(questionIndex)
+        setSelectedAnswer(null)
+        setTimeLeft(TIMER_DURATION)
+        setStartTime(Date.now())
+        setPartnerAnswered(false)
+        setIsTransitioning(false)
+      }, 500)
+    })
+
+    // Listen for activity complete
+    socket.on('activity:complete', () => {
+      router.push('/activity/your-sound')
+    })
+
+    return () => {
+      socket.off('question:current')
+      socket.off('question:next')
+      socket.off('activity:complete')
+    }
+  }, [sessionCode, socket, router])
 
   // Timer countdown
   useEffect(() => {
@@ -67,47 +108,25 @@ export default function QuickPicksPage() {
     const responseTime = Date.now() - startTime
     setSelectedAnswer(answer)
 
-    // Emit answer to partner
+    // Emit answer to server (server will advance when both answered)
     socket.emit('activity:answer', {
       sessionCode,
       activity: 'quick-picks',
       answer: {
-        questionId: questions[currentQuestionIndex].id,
+        questionId: questions[currentQuestionIndex]?.id,
         answer,
         time: responseTime,
         username: currentUser?.username,
       },
       username: currentUser?.username,
     })
-
-    // Wait for both to answer or move on after 3 seconds
-    setTimeout(() => {
-      moveToNextQuestion()
-    }, 3000)
+    // No auto-advance - server controls this now!
   }
 
   const handleTimeout = () => {
     // Auto-select random answer on timeout
     const randomAnswer = Math.random() > 0.5 ? 'A' : 'B'
     handleAnswer(randomAnswer)
-  }
-
-  const moveToNextQuestion = () => {
-    setIsTransitioning(true)
-
-    setTimeout(() => {
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex((prev) => prev + 1)
-        setSelectedAnswer(null)
-        setTimeLeft(TIMER_DURATION)
-        setStartTime(Date.now())
-        setPartnerAnswered(false)
-        setIsTransitioning(false)
-      } else {
-        // All questions complete, move to next activity
-        router.push('/activity/your-sound')
-      }
-    }, 500)
   }
 
   if (questions.length === 0) {

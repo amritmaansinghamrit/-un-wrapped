@@ -18,6 +18,13 @@ export interface Session {
     [username: string]: boolean
   }
   activities: SessionActivities
+  // Question synchronization
+  questionSync?: {
+    currentActivity: string | null
+    currentQuestionIndex: number
+    answersReceived: Set<string> // usernames who answered current question
+    questions: any[] // Shared question set for current activity
+  }
 }
 
 export interface SessionActivities {

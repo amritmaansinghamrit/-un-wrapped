@@ -39,6 +39,12 @@ export const sessionStore = {
         photos: [],
         creative: null,
       },
+      questionSync: {
+        currentActivity: null,
+        currentQuestionIndex: 0,
+        answersReceived: new Set(),
+        questions: [],
+      },
     }
 
     sessions.set(sessionId, session)
@@ -151,5 +157,49 @@ export const sessionStore = {
     sessions.set(sessionId, session)
 
     return session
+  },
+
+  // Question synchronization methods
+  initializeActivity(sessionId: string, activity: string, questions: any[]): Session | null {
+    const session = sessions.get(sessionId)
+    if (!session || !session.questionSync) return null
+
+    session.questionSync.currentActivity = activity
+    session.questionSync.currentQuestionIndex = 0
+    session.questionSync.answersReceived = new Set()
+    session.questionSync.questions = questions
+
+    sessions.set(sessionId, session)
+    return session
+  },
+
+  recordAnswer(sessionId: string, username: string): { bothAnswered: boolean; session: Session } | null {
+    const session = sessions.get(sessionId)
+    if (!session || !session.questionSync) return null
+
+    session.questionSync.answersReceived.add(username)
+    const bothAnswered = session.questionSync.answersReceived.size === 2
+
+    sessions.set(sessionId, session)
+    return { bothAnswered, session }
+  },
+
+  advanceQuestion(sessionId: string): Session | null {
+    const session = sessions.get(sessionId)
+    if (!session || !session.questionSync) return null
+
+    session.questionSync.currentQuestionIndex += 1
+    session.questionSync.answersReceived = new Set()
+
+    sessions.set(sessionId, session)
+    return session
+  },
+
+  getCurrentQuestion(sessionId: string): any | null {
+    const session = sessions.get(sessionId)
+    if (!session || !session.questionSync) return null
+
+    const { currentQuestionIndex, questions } = session.questionSync
+    return questions[currentQuestionIndex] || null
   },
 }
