@@ -33,30 +33,43 @@ export default function InYourOwnWordsPage() {
   useEffect(() => {
     if (!sessionCode) return
 
-    // Tell server to initialize activity
-    socket.emit('activity:start', {
-      sessionCode,
-      activity: 'in-your-own-words',
-      questions: VOICE_PROMPTS,
-    })
+    try {
+      // Tell server to initialize activity
+      socket.emit('activity:start', {
+        sessionCode,
+        activity: 'in-your-own-words',
+        questions: VOICE_PROMPTS,
+      })
 
-    // Listen for next prompt from server
-    socket.on('question:next', ({ questionIndex }) => {
-      setIsTransitioning(true)
-      setTimeout(() => {
-        setCurrentPromptIndex(questionIndex)
-        setAudioBlob(null)
-        setRecordingTime(0)
-        setWaveform([])
-        setPartnerAnswered(false)
-        setIsTransitioning(false)
-      }, 500)
-    })
+      // Listen for next prompt from server
+      socket.on('question:next', ({ questionIndex }) => {
+        try {
+          setIsTransitioning(true)
+          setTimeout(() => {
+            setCurrentPromptIndex(questionIndex)
+            setAudioBlob(null)
+            setRecordingTime(0)
+            setWaveform([])
+            setPartnerAnswered(false)
+            setIsTransitioning(false)
+          }, 500)
+        } catch (error) {
+          console.error('Error handling question:next:', error)
+          setIsTransitioning(false)
+        }
+      })
 
-    // Listen for activity complete
-    socket.on('activity:complete', () => {
-      router.push('/activity/the-moments')
-    })
+      // Listen for activity complete
+      socket.on('activity:complete', () => {
+        try {
+          router.push('/activity/the-moments')
+        } catch (error) {
+          console.error('Error handling activity:complete:', error)
+        }
+      })
+    } catch (error) {
+      console.error('Error initializing voice activity:', error)
+    }
 
     return () => {
       socket.off('question:next')
@@ -120,9 +133,22 @@ export default function InYourOwnWordsPage() {
 
       // Start waveform animation
       updateWaveform()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting recording:', error)
-      alert('Failed to access microphone. Please check permissions.')
+
+      // User-friendly error messages
+      let message = 'Failed to access microphone. '
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        message += 'Please allow microphone access in your browser settings.'
+      } else if (error.name === 'NotFoundError') {
+        message += 'No microphone found on your device.'
+      } else if (error.name === 'NotReadableError') {
+        message += 'Microphone is already in use by another application.'
+      } else {
+        message += 'Please check your device settings and try again.'
+      }
+
+      alert(message)
     }
   }
 

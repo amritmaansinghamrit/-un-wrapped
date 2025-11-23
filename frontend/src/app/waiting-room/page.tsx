@@ -25,20 +25,36 @@ export default function WaitingRoomPage() {
       return
     }
 
-    // Listen for partner joining
-    socket.on('partner:joined', ({ username }: { username: string }) => {
-      setPartnerUser({ username, isReady: false })
-    })
+    try {
+      // Listen for partner joining
+      socket.on('partner:joined', ({ username }: { username: string }) => {
+        try {
+          setPartnerUser({ username, isReady: false })
+        } catch (error) {
+          console.error('Error handling partner:joined:', error)
+        }
+      })
 
-    // Listen for ready status
-    socket.on('partner:ready', ({ username }: { username: string }) => {
-      updateUserReady(username, true)
-    })
+      // Listen for ready status
+      socket.on('partner:ready', ({ username }: { username: string }) => {
+        try {
+          updateUserReady(username, true)
+        } catch (error) {
+          console.error('Error handling partner:ready:', error)
+        }
+      })
 
-    // Listen for both ready (start activities)
-    socket.on('both:ready', () => {
-      router.push('/activity/quick-picks')
-    })
+      // Listen for both ready (start activities)
+      socket.on('both:ready', () => {
+        try {
+          router.push('/activity/quick-picks')
+        } catch (error) {
+          console.error('Error handling both:ready:', error)
+        }
+      })
+    } catch (error) {
+      console.error('Error setting up waiting room:', error)
+    }
 
     return () => {
       socket.off('partner:joined')
@@ -49,9 +65,15 @@ export default function WaitingRoomPage() {
 
   const copyCode = async () => {
     if (sessionCode) {
-      await navigator.clipboard.writeText(sessionCode)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      try {
+        await navigator.clipboard.writeText(sessionCode)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (error) {
+        console.error('Error copying to clipboard:', error)
+        // Fallback: show alert with code
+        alert(`Session code: ${sessionCode}`)
+      }
     }
   }
 

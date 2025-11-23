@@ -28,42 +28,59 @@ export default function QuickPicksPage() {
   useEffect(() => {
     if (!sessionCode) return
 
-    const selectedQuestions = getRandomQuestions(QUESTIONS_COUNT)
-    setQuestions(selectedQuestions)
-    setStartTime(Date.now())
+    try {
+      const selectedQuestions = getRandomQuestions(QUESTIONS_COUNT)
+      setQuestions(selectedQuestions)
+      setStartTime(Date.now())
 
-    // Tell server to initialize activity with these questions
-    socket.emit('activity:start', {
-      sessionCode,
-      activity: 'quick-picks',
-      questions: selectedQuestions,
-    })
+      // Tell server to initialize activity with these questions
+      socket.emit('activity:start', {
+        sessionCode,
+        activity: 'quick-picks',
+        questions: selectedQuestions,
+      })
 
-    // Listen for current question from server
-    socket.on('question:current', ({ questionIndex, question }) => {
-      if (question) {
-        setCurrentQuestionIndex(questionIndex)
-        setStartTime(Date.now())
-      }
-    })
+      // Listen for current question from server
+      socket.on('question:current', ({ questionIndex, question }) => {
+        try {
+          if (question) {
+            setCurrentQuestionIndex(questionIndex)
+            setStartTime(Date.now())
+          }
+        } catch (error) {
+          console.error('Error handling question:current:', error)
+        }
+      })
 
-    // Listen for next question from server (only advances when both answered)
-    socket.on('question:next', ({ questionIndex, question }) => {
-      setIsTransitioning(true)
-      setTimeout(() => {
-        setCurrentQuestionIndex(questionIndex)
-        setSelectedAnswer(null)
-        setTimeLeft(TIMER_DURATION)
-        setStartTime(Date.now())
-        setPartnerAnswered(false)
-        setIsTransitioning(false)
-      }, 500)
-    })
+      // Listen for next question from server (only advances when both answered)
+      socket.on('question:next', ({ questionIndex, question }) => {
+        try {
+          setIsTransitioning(true)
+          setTimeout(() => {
+            setCurrentQuestionIndex(questionIndex)
+            setSelectedAnswer(null)
+            setTimeLeft(TIMER_DURATION)
+            setStartTime(Date.now())
+            setPartnerAnswered(false)
+            setIsTransitioning(false)
+          }, 500)
+        } catch (error) {
+          console.error('Error handling question:next:', error)
+          setIsTransitioning(false)
+        }
+      })
 
-    // Listen for activity complete
-    socket.on('activity:complete', () => {
-      router.push('/activity/your-sound')
-    })
+      // Listen for activity complete
+      socket.on('activity:complete', () => {
+        try {
+          router.push('/activity/your-sound')
+        } catch (error) {
+          console.error('Error handling activity:complete:', error)
+        }
+      })
+    } catch (error) {
+      console.error('Error initializing activity:', error)
+    }
 
     return () => {
       socket.off('question:current')

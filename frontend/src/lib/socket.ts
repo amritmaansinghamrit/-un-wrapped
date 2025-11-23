@@ -11,6 +11,40 @@ export const getSocket = (): Socket => {
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      timeout: 10000,
+    })
+
+    // Error handling
+    socket.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error.message)
+    })
+
+    socket.on('connect_timeout', () => {
+      console.error('❌ Socket connection timeout')
+    })
+
+    socket.on('error', (error) => {
+      console.error('❌ Socket error:', error)
+    })
+
+    socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`🔄 Reconnection attempt ${attemptNumber}`)
+    })
+
+    socket.on('reconnect_failed', () => {
+      console.error('❌ Failed to reconnect after maximum attempts')
+    })
+
+    socket.on('disconnect', (reason) => {
+      console.log('👋 Socket disconnected:', reason)
+      if (reason === 'io server disconnect') {
+        // Server disconnected, manually reconnect
+        socket?.connect()
+      }
+    })
+
+    socket.on('connect', () => {
+      console.log('✅ Socket connected')
     })
   }
   return socket
